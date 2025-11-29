@@ -47,21 +47,23 @@ jobs:
           echo "✅ SECURITY GATE: secure-app APPROVED"
         fi
 
-    # 👇 ЗАГРУЗКА В СУЩЕСТВУЮЩИЙ РЕПОЗИТОРИЙ my-flask-app
-    - name: 🚀 Push to Docker Hub (my-flask-app)
+    # 👇 АВТОМАТИЧЕСКАЯ ЗАГРУЗКА В DOCKER HUB
+    - name: 🚀 Push Secure Image to Docker Hub
       if: matrix.app == 'secure-app' && success()
       run: |
         echo "🔐 Logging into Docker Hub..."
         echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
         
-        echo "🏷️ Tagging image as my-flask-app..."
-        docker tag secure-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-version
+        echo "🏷️ Tagging image for Docker Hub..."
+        docker tag secure-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-latest
         docker tag secure-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:${{ github.sha }}
         
         echo "📤 Pushing to Docker Hub..."
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-version
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-latest
         docker push ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:${{ github.sha }}
         
-        echo "🎉 Successfully pushed secure-app as my-flask-app to Docker Hub!"
-        echo "📦 Image: ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-version"
+        echo "🎉 Successfully pushed to Docker Hub!"
+        echo "📦 Images:"
+        echo "  - ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-latest"
+        echo "  - ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:${{ github.sha }}"
         echo "🔗 URL: https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app"
