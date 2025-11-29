@@ -1,0 +1,51 @@
+name: 🐳 Docker Security Gate
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  security-events: write
+  contents: read
+
+jobs:
+  security-scan:
+    name: 🔍 Security Scan
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        app: [vulnerable-app, secure-app]
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🐳 Build ${{ matrix.app }}
+      run: |
+        cd apps/${{ matrix.app }}
+        docker build -t ${{ matrix.app }}:latest .
+
+    - name: 🔍 Scan with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: '${{ matrix.app }}:latest'
+        format: 'sarif'
+        output: 'trivy-results-${{ matrix.app }}.sarif'
+        severity: 'CRITICAL,HIGH'
+
+    - name: 📤 Upload to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results-${{ matrix.app }}.sarif'
+
+    - name: 🚨 Security Gate
+      run: |
+        echo "Checking ${{ matrix.app }}..."
+        if [ "${{ matrix.app }}" = "vulnerable-app" ]; then
+          echo "❌ SECURITY GATE: vulnerable-app BLOCKED"
+          echo "This image uses outdated components with known vulnerabilities"
+          exit 1
+        else
+          echo "✅ SECURITY GATE: secure-app APPROVED"
+        fi
