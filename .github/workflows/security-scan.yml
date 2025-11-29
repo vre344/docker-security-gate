@@ -28,11 +28,8 @@ jobs:
 
     - name: 🔍 Install and Run Trivy
       run: |
-        # Устанавливаем Trivy напрямую
         wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.deb
         sudo dpkg -i trivy_0.49.1_Linux-64bit.deb
-        
-        # Сканируем образ
         trivy image --format sarif --output trivy-results-${{ matrix.app }}.sarif --severity CRITICAL,HIGH ${{ matrix.app }}:latest
 
     - name: 📤 Upload to GitHub Security
@@ -45,16 +42,26 @@ jobs:
         echo "Checking ${{ matrix.app }}..."
         if [ "${{ matrix.app }}" = "vulnerable-app" ]; then
           echo "❌ SECURITY GATE: vulnerable-app BLOCKED"
-          echo "This image uses outdated components with known vulnerabilities"
           exit 1
         else
           echo "✅ SECURITY GATE: secure-app APPROVED"
         fi
 
-    - name: 🚀 Test Docker Hub Message
+    # 👇 ЗАГРУЗКА В СУЩЕСТВУЮЩИЙ РЕПОЗИТОРИЙ my-flask-app
+    - name: 🚀 Push to Docker Hub (my-flask-app)
       if: matrix.app == 'secure-app' && success()
       run: |
-        echo "✅ SECURITY GATE: secure-app would be pushed to Docker Hub"
-        echo "📦 Image: vre344/secure-app:latest"
-        echo "🔗 URL: https://hub.docker.com/r/vre344/secure-app"
-        echo "⚠️  To enable actual push, configure DOCKERHUB_USERNAME and DOCKERHUB_TOKEN secrets in GitHub"
+        echo "🔐 Logging into Docker Hub..."
+        echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        
+        echo "🏷️ Tagging image as my-flask-app..."
+        docker tag secure-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-version
+        docker tag secure-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:${{ github.sha }}
+        
+        echo "📤 Pushing to Docker Hub..."
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-version
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:${{ github.sha }}
+        
+        echo "🎉 Successfully pushed secure-app as my-flask-app to Docker Hub!"
+        echo "📦 Image: ${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app:secure-version"
+        echo "🔗 URL: https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/my-flask-app"
