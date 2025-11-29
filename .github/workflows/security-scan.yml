@@ -44,8 +44,26 @@ jobs:
         echo "Checking ${{ matrix.app }}..."
         if [ "${{ matrix.app }}" = "vulnerable-app" ]; then
           echo "❌ SECURITY GATE: vulnerable-app BLOCKED"
-          echo "This image uses outdated components with known vulnerabilities"
           exit 1
         else
           echo "✅ SECURITY GATE: secure-app APPROVED"
         fi
+
+    # 👇 АВТОМАТИЧЕСКАЯ ЗАГРУЗКА В DOCKER HUB
+    - name: 🚀 Push to Docker Hub
+      if: matrix.app == 'secure-app' && success()  # ТОЛЬКО если secure-app и все шаги успешны
+      run: |
+        echo "🔐 Logging into Docker Hub..."
+        echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+        
+        echo "🏷️ Tagging image for Docker Hub..."
+        docker tag secure-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/secure-app:latest
+        docker tag secure-app:latest ${{ secrets.DOCKERHUB_USERNAME }}/secure-app:${{ github.sha }}
+        
+        echo "📤 Pushing to Docker Hub..."
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/secure-app:latest
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/secure-app:${{ github.sha }}
+        
+        echo "🎉 Successfully pushed to Docker Hub!"
+        echo "📦 Image: ${{ secrets.DOCKERHUB_USERNAME }}/secure-app:latest"
+        echo "🔗 URL: https://hub.docker.com/r/${{ secrets.DOCKERHUB_USERNAME }}/secure-app"
