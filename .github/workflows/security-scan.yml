@@ -47,7 +47,7 @@ jobs:
           echo "✅ SECURITY GATE: secure-app APPROVED"
         fi
 
-    # 👇 АВТОМАТИЧЕСКАЯ ЗАГРУЗКА В DOCKER HUB
+    # 👇 АВТОМАТИЧЕСКАЯ ЗАГРУЗКА В DOCKER HUB (после добавления секретов)
     - name: 🚀 Push Secure Image to Docker Hub
       if: matrix.app == 'secure-app' && success()
       run: |
