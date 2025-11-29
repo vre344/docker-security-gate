@@ -4,6 +4,9 @@ on:
   push:
     branches: [ main ]
 
+env:
+  DOCKERHUB_USERNAME: vre344
+
 permissions:
   security-events: write
   contents: read
@@ -27,7 +30,7 @@ jobs:
         docker build -t ${{ matrix.app }}:latest .
 
     - name: 🔍 Scan with Trivy
-      uses: aquasecurity/trivy-action@master
+      uses: aquasec/trivy-action@master
       with:
         image-ref: '${{ matrix.app }}:latest'
         format: 'sarif'
@@ -51,7 +54,7 @@ jobs:
 
     # 👇 АВТОМАТИЧЕСКАЯ ЗАГРУЗКА В DOCKER HUB
     - name: 🚀 Push to Docker Hub
-      if: matrix.app == 'secure-app' && success()  # ТОЛЬКО если secure-app и все шаги успешны
+      if: matrix.app == 'secure-app' && success()
       run: |
         echo "🔐 Logging into Docker Hub..."
         echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
